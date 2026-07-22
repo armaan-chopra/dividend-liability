@@ -508,12 +508,25 @@ class DividendDashboard(tk.Tk):
 
     # ----------------------------------------------------------- body --
     def _build_body(self):
-        body = tk.Frame(self, bg=self.BG_APP, padx=16, pady=6)
-        body.pack(side="top", fill="both", expand=True)
+        container = tk.Frame(self, bg=self.BG_APP)
+        container.pack(side="top", fill="both", expand=True)
 
+        self.main_notebook = ttk.Notebook(container)
+        self.main_notebook.pack(fill="both", expand=True, padx=16, pady=(0, 8))
+
+        portfolio_tab = tk.Frame(self.main_notebook, bg=self.BG_APP)
+        analytics_tab = tk.Frame(self.main_notebook, bg=self.BG_APP)
+        self.main_notebook.add(portfolio_tab, text="  Portfolio  ")
+        self.main_notebook.add(analytics_tab, text="  Analytics  ")
+
+        self._build_portfolio_tab(portfolio_tab)
+        self._build_analytics_tab(analytics_tab)
+
+    # ------------------------------------------------------ portfolio tab --
+    def _build_portfolio_tab(self, parent):
         # ---- Left: table ----
-        left = tk.Frame(body, bg=self.BG_APP)
-        left.pack(side="left", fill="both", expand=True)
+        left = tk.Frame(parent, bg=self.BG_APP)
+        left.pack(side="left", fill="both", expand=True, padx=(2, 0), pady=6)
 
         table_card = tk.Frame(left, bg=self.BG_PANEL, highlightbackground=self.BORDER, highlightthickness=1)
         table_card.pack(side="top", fill="both", expand=True)
@@ -548,9 +561,9 @@ class DividendDashboard(tk.Tk):
         ]:
             tk.Label(legend, text=text, bg=self.BG_APP, fg=color, font=self.FONT_SUB).pack(side="left", padx=(0, 16))
 
-        # ---- Right: stat cards + charts ----
-        right = tk.Frame(body, width=420, bg=self.BG_APP)
-        right.pack(side="right", fill="y", padx=(14, 0))
+        # ---- Right: stat cards ----
+        right = tk.Frame(parent, width=420, bg=self.BG_APP)
+        right.pack(side="right", fill="y", padx=(14, 0), pady=6)
         right.pack_propagate(False)
 
         tk.Label(right, text="PORTFOLIO STATISTICS", bg=self.BG_APP, fg=self.TEXT_SECONDARY,
@@ -595,47 +608,75 @@ class DividendDashboard(tk.Tk):
         self.weight_warning = ttk.Label(right, text="", style="Warn.TLabel", wraplength=400, justify="left")
         self.weight_warning.pack(side="top", anchor="w", pady=(4, 6))
 
-        # ---- Charts, tabbed ----
-        chart_card = tk.Frame(right, bg=self.BG_PANEL, highlightbackground=self.BORDER, highlightthickness=1)
-        chart_card.pack(side="top", fill="both", expand=True, pady=(4, 0))
+        cta = tk.Frame(right, bg=self.BG_PANEL_ALT, highlightbackground=self.BORDER, highlightthickness=1,
+                        padx=12, pady=10)
+        cta.pack(side="top", fill="x", pady=(6, 0))
+        tk.Label(cta, text="\u2192  See allocation, liability drivers, and yield spread charts in the",
+                 bg=self.BG_PANEL_ALT, fg=self.TEXT_SECONDARY, font=self.FONT_SUB, wraplength=380, justify="left"
+                 ).pack(side="top", anchor="w")
+        ttk.Label(cta, text="Analytics tab", style="Accent.TLabel", background=self.BG_PANEL_ALT).pack(side="top", anchor="w")
 
-        if MATPLOTLIB_AVAILABLE:
-            notebook = ttk.Notebook(chart_card)
-            notebook.pack(fill="both", expand=True, padx=4, pady=4)
+    # ------------------------------------------------------- analytics tab --
+    def _build_analytics_tab(self, parent):
+        header = tk.Frame(parent, bg=self.BG_APP)
+        header.pack(side="top", fill="x", padx=6, pady=(10, 4))
+        tk.Label(header, text="Portfolio Analytics", bg=self.BG_APP, fg=self.TEXT_PRIMARY,
+                 font=self.FONT_HEADER).pack(side="left")
+        tk.Label(header, text="  \u00b7  allocation, liability drivers, and yield spread at a glance",
+                 bg=self.BG_APP, fg=self.TEXT_SECONDARY, font=self.FONT_SUB).pack(side="left")
 
-            pie_tab = tk.Frame(notebook, bg=self.BG_PANEL)
-            bar_tab = tk.Frame(notebook, bg=self.BG_PANEL)
-            notebook.add(pie_tab, text="Allocation")
-            notebook.add(bar_tab, text="Top Contributors")
-
-            self._mpl_dark = {
-                "figure.facecolor": self.BG_PANEL,
-                "axes.facecolor": self.BG_PANEL,
-                "axes.edgecolor": self.BORDER,
-                "axes.labelcolor": self.TEXT_SECONDARY,
-                "text.color": self.TEXT_PRIMARY,
-                "xtick.color": self.TEXT_SECONDARY,
-                "ytick.color": self.TEXT_SECONDARY,
-            }
-
-            self.fig = Figure(figsize=(3.8, 3.4), dpi=100)
-            self.fig.patch.set_facecolor(self.BG_PANEL)
-            self.ax = self.fig.add_subplot(111)
-            self.canvas = FigureCanvasTkAgg(self.fig, master=pie_tab)
-            self.canvas.get_tk_widget().pack(fill="both", expand=True)
-
-            self.fig_bar = Figure(figsize=(3.8, 3.4), dpi=100)
-            self.fig_bar.patch.set_facecolor(self.BG_PANEL)
-            self.ax_bar = self.fig_bar.add_subplot(111)
-            self.canvas_bar = FigureCanvasTkAgg(self.fig_bar, master=bar_tab)
-            self.canvas_bar.get_tk_widget().pack(fill="both", expand=True)
-        else:
+        if not MATPLOTLIB_AVAILABLE:
             ttk.Label(
-                chart_card,
+                parent,
                 text="matplotlib not installed.\nRun: pip install matplotlib\nto enable charts.",
-                style="Panel.TLabel",
-                justify="center",
+                style="Panel.TLabel", justify="center",
             ).pack(expand=True)
+            return
+
+        grid = tk.Frame(parent, bg=self.BG_APP)
+        grid.pack(fill="both", expand=True, padx=6, pady=(2, 10))
+        grid.columnconfigure(0, weight=1)
+        grid.columnconfigure(1, weight=1)
+        grid.rowconfigure(0, weight=1)
+        grid.rowconfigure(1, weight=1)
+
+        def make_chart_card(row, col, title):
+            card = tk.Frame(grid, bg=self.BG_PANEL, highlightbackground=self.BORDER, highlightthickness=1)
+            card.grid(row=row, column=col, sticky="nsew", padx=6, pady=6)
+            tk.Label(card, text=title, bg=self.BG_PANEL, fg=self.TEXT_SECONDARY,
+                     font=(self.FONT_UI[0], 9, "bold")).pack(side="top", anchor="w", padx=12, pady=(10, 0))
+            holder = tk.Frame(card, bg=self.BG_PANEL)
+            holder.pack(fill="both", expand=True, padx=6, pady=(2, 8))
+            return holder
+
+        weight_holder = make_chart_card(0, 0, "PORTFOLIO WEIGHT ALLOCATION")
+        liability_holder = make_chart_card(0, 1, "DIVIDEND LIABILITY CONTRIBUTION")
+        bar_holder = make_chart_card(1, 0, "TOP CONTRIBUTORS \u2014 TTM vs SEC (pp)")
+        scatter_holder = make_chart_card(1, 1, "YIELD SPREAD \u2014 TTM vs SEC (bubble = weight)")
+
+        self.fig_weight = Figure(figsize=(5.0, 3.6), dpi=100)
+        self.fig_weight.patch.set_facecolor(self.BG_PANEL)
+        self.ax_weight = self.fig_weight.add_subplot(111)
+        self.canvas_weight = FigureCanvasTkAgg(self.fig_weight, master=weight_holder)
+        self.canvas_weight.get_tk_widget().pack(fill="both", expand=True)
+
+        self.fig = Figure(figsize=(5.0, 3.6), dpi=100)
+        self.fig.patch.set_facecolor(self.BG_PANEL)
+        self.ax = self.fig.add_subplot(111)
+        self.canvas = FigureCanvasTkAgg(self.fig, master=liability_holder)
+        self.canvas.get_tk_widget().pack(fill="both", expand=True)
+
+        self.fig_bar = Figure(figsize=(5.0, 3.6), dpi=100)
+        self.fig_bar.patch.set_facecolor(self.BG_PANEL)
+        self.ax_bar = self.fig_bar.add_subplot(111)
+        self.canvas_bar = FigureCanvasTkAgg(self.fig_bar, master=bar_holder)
+        self.canvas_bar.get_tk_widget().pack(fill="both", expand=True)
+
+        self.fig_scatter = Figure(figsize=(5.0, 3.6), dpi=100)
+        self.fig_scatter.patch.set_facecolor(self.BG_PANEL)
+        self.ax_scatter = self.fig_scatter.add_subplot(111)
+        self.canvas_scatter = FigureCanvasTkAgg(self.fig_scatter, master=scatter_holder)
+        self.canvas_scatter.get_tk_widget().pack(fill="both", expand=True)
 
     # ------------------------------------------------------ status bar --
     def _build_status_bar(self):
@@ -965,8 +1006,10 @@ class DividendDashboard(tk.Tk):
     def _refresh_all(self):
         self._refresh_table()
         self._refresh_stats()
-        self._refresh_pie_chart()
+        self._refresh_weight_donut()
+        self._refresh_liability_donut()
         self._refresh_bar_chart()
+        self._refresh_scatter_chart()
 
     def _refresh_table(self):
         self.tree.delete(*self.tree.get_children())
@@ -1050,49 +1093,78 @@ class DividendDashboard(tk.Tk):
         else:
             self.weight_warning.configure(text="")
 
-    def _refresh_pie_chart(self):
+    PALETTE = ["#E3AB4E", "#5CA3D9", "#4FBF8B", "#C77DD1", "#E2685C",
+               "#7DA6D1", "#D1B37D", "#7DD1B0", "#E39A4E", "#9AA8E3"]
+
+    def _ticker_color_map(self):
+        """Stable ticker->color mapping (alphabetical) so the same holding
+        keeps the same color across every chart in the Analytics tab."""
+        ordered = sorted(self.holdings, key=lambda h: h.ticker)
+        return {h.ticker: self.PALETTE[i % len(self.PALETTE)] for i, h in enumerate(ordered)}
+
+    def _draw_donut(self, ax, fig, canvas, values_by_ticker, center_label, center_sub, empty_msg):
+        """Shared renderer for the two donut charts: a clean ring (no
+        crowded on-wedge labels), a legend, and a summary figure in the hole."""
+        ax.clear()
+        color_map = self._ticker_color_map()
+        if self.holdings and sum(values_by_ticker.values()) > 0:
+            items = sorted(values_by_ticker.items(), key=lambda kv: kv[1], reverse=True)
+            # Group long tails into "Other" so the ring and legend stay readable
+            if len(items) > 8:
+                head, tail = items[:7], items[7:]
+                items = head + [("Other", sum(v for _, v in tail))]
+            labels = [k for k, _ in items]
+            sizes = [v for _, v in items]
+            colors = [color_map.get(k, self.TEXT_MUTED) for k in labels]
+
+            wedges, _texts, autotexts = ax.pie(
+                sizes,
+                autopct=lambda p: f"{p:.0f}%" if p >= 6 else "",
+                startangle=90,
+                colors=colors,
+                pctdistance=0.82,
+                textprops={"fontsize": 8, "color": self.BG_APP, "weight": "bold"},
+                wedgeprops={"edgecolor": self.BG_PANEL, "linewidth": 2, "width": 0.42},
+            )
+            ax.legend(
+                wedges, labels, loc="center left", bbox_to_anchor=(1.02, 0.5),
+                fontsize=7.5, frameon=False, labelcolor=self.TEXT_PRIMARY, handlelength=1.2,
+            )
+            ax.text(0, 0.10, center_label, ha="center", va="center",
+                    fontsize=15, fontweight="bold", color=self.TEXT_PRIMARY, family=self.FONT_MONO[0])
+            ax.text(0, -0.20, center_sub, ha="center", va="center",
+                    fontsize=7.5, color=self.TEXT_SECONDARY)
+            fig.subplots_adjust(left=0.02, right=0.62, top=0.95, bottom=0.05)
+        else:
+            ax.text(0.5, 0.5, empty_msg, ha="center", va="center",
+                    fontsize=10, color=self.TEXT_SECONDARY, transform=ax.transAxes)
+            ax.axis("off")
+            fig.tight_layout()
+        fig.patch.set_facecolor(self.BG_PANEL)
+        ax.set_facecolor(self.BG_PANEL)
+        canvas.draw()
+
+    def _refresh_weight_donut(self):
         if not MATPLOTLIB_AVAILABLE:
             return
-        self.ax.clear()
-        pie_colors = [self.ACCENT, self.INFO, self.POSITIVE, "#C77DD1", "#E2685C",
-                      "#7DA6D1", "#D1B37D", "#7DD1B0"]
-        if self.holdings:
-            sorted_holdings = sorted(self.holdings, key=lambda x: x.avg_contribution_pp, reverse=True)
-            labels = [h.ticker for h in sorted_holdings]
-            sizes = [h.avg_contribution_pp for h in sorted_holdings]
+        total_weight = sum(h.weight_pct for h in self.holdings)
+        values = {h.ticker: h.weight_pct for h in self.holdings}
+        self._draw_donut(
+            self.ax_weight, self.fig_weight, self.canvas_weight, values,
+            f"{total_weight:,.1f}%", f"{len(self.holdings)} holdings",
+            "No holdings yet",
+        )
 
-            # Group very small slices into "Other" for readability if many holdings
-            if len(sorted_holdings) > 8:
-                main = sorted_holdings[:7]
-                other_sum = sum(h.avg_contribution_pp for h in sorted_holdings[7:])
-                labels = [h.ticker for h in main] + ["Other"]
-                sizes = [h.avg_contribution_pp for h in main] + [other_sum]
-
-            wedges, texts, autotexts = self.ax.pie(
-                sizes,
-                autopct=lambda p: f"{p:.0f}%" if p > 5 else "",
-                startangle=90,
-                colors=[pie_colors[i % len(pie_colors)] for i in range(len(sizes))],
-                textprops={"fontsize": 8, "color": self.BG_APP, "weight": "bold"},
-                wedgeprops={"edgecolor": self.BG_PANEL, "linewidth": 1.5},
-                pctdistance=0.75,
-            )
-            self.ax.legend(
-                wedges, labels, loc="center left", bbox_to_anchor=(1.0, 0.5),
-                fontsize=7, frameon=False, labelcolor=self.TEXT_PRIMARY,
-            )
-            self.ax.set_title("Share of Dividend Liability", fontsize=9, color=self.TEXT_PRIMARY)
-        else:
-            self.ax.text(0.5, 0.5, "No holdings yet", ha="center", va="center",
-                          fontsize=10, color=self.TEXT_SECONDARY)
-            self.ax.axis("off")
-        self.fig.patch.set_facecolor(self.BG_PANEL)
-        self.ax.set_facecolor(self.BG_PANEL)
-        if self.holdings:
-            self.fig.subplots_adjust(left=0.02, right=0.60, top=0.88, bottom=0.05)
-        else:
-            self.fig.tight_layout()
-        self.canvas.draw()
+    def _refresh_liability_donut(self):
+        if not MATPLOTLIB_AVAILABLE:
+            return
+        cum_yield = sum(h.avg_contribution_pp for h in self.holdings)
+        values = {h.ticker: h.avg_contribution_pp for h in self.holdings}
+        self._draw_donut(
+            self.ax, self.fig, self.canvas, values,
+            f"{cum_yield:,.2f}%", "cumulative yield",
+            "No holdings yet",
+        )
 
     def _refresh_bar_chart(self):
         if not MATPLOTLIB_AVAILABLE:
@@ -1104,30 +1176,81 @@ class DividendDashboard(tk.Tk):
             ttm_vals = [h.ttm_contribution_pp for h in reversed(sorted_holdings)]
             sec_vals = [h.sec_contribution_pp for h in reversed(sorted_holdings)]
 
-            y = range(len(tickers))
+            y = list(range(len(tickers)))
             bar_h = 0.35
             self.ax_bar.barh([p + bar_h / 2 for p in y], ttm_vals, height=bar_h,
                               color=self.INFO, label="TTM contrib. (pp)")
             self.ax_bar.barh([p - bar_h / 2 for p in y], sec_vals, height=bar_h,
                               color=self.ACCENT, label="SEC contrib. (pp)")
-            self.ax_bar.set_yticks(list(y))
-            self.ax_bar.set_yticklabels(tickers, fontsize=8, color=self.TEXT_PRIMARY)
+            self.ax_bar.set_yticks(y)
+            self.ax_bar.set_yticklabels(tickers, fontsize=8.5, color=self.TEXT_PRIMARY)
             self.ax_bar.tick_params(axis="x", labelsize=8, colors=self.TEXT_SECONDARY)
-            self.ax_bar.set_title("Top Contributors to Liability (pp)", fontsize=9, color=self.TEXT_PRIMARY)
-            self.ax_bar.legend(fontsize=7, facecolor=self.BG_PANEL, edgecolor=self.BORDER,
+            self.ax_bar.legend(fontsize=7.5, facecolor=self.BG_PANEL, edgecolor=self.BORDER,
                                 labelcolor=self.TEXT_PRIMARY, loc="lower right")
             self.ax_bar.spines["top"].set_visible(False)
             self.ax_bar.spines["right"].set_visible(False)
             self.ax_bar.spines["left"].set_color(self.BORDER)
             self.ax_bar.spines["bottom"].set_color(self.BORDER)
+            self.ax_bar.grid(axis="x", color=self.BORDER, linewidth=0.6, alpha=0.6)
+            self.ax_bar.set_axisbelow(True)
+            self.fig_bar.tight_layout()
         else:
             self.ax_bar.text(0.5, 0.5, "No holdings yet", ha="center", va="center",
                               fontsize=10, color=self.TEXT_SECONDARY)
             self.ax_bar.axis("off")
+            self.fig_bar.tight_layout()
         self.fig_bar.patch.set_facecolor(self.BG_PANEL)
         self.ax_bar.set_facecolor(self.BG_PANEL)
-        self.fig_bar.tight_layout()
         self.canvas_bar.draw()
+
+    def _refresh_scatter_chart(self):
+        if not MATPLOTLIB_AVAILABLE:
+            return
+        self.ax_scatter.clear()
+        if self.holdings:
+            color_map = self._ticker_color_map()
+            xs = [h.sec_yield_pct for h in self.holdings]
+            ys = [h.ttm_yield_pct for h in self.holdings]
+            weights = [max(h.weight_pct, 0.5) for h in self.holdings]
+            sizes = [w * 22 for w in weights]
+            colors = [color_map[h.ticker] for h in self.holdings]
+
+            lo = min(xs + ys + [0]) - 0.3
+            hi = max(xs + ys) + 0.3
+            self.ax_scatter.plot([lo, hi], [lo, hi], linestyle="--", linewidth=1,
+                                  color=self.TEXT_MUTED, alpha=0.7, zorder=1)
+
+            self.ax_scatter.scatter(xs, ys, s=sizes, c=colors, alpha=0.85,
+                                     edgecolors=self.BG_PANEL, linewidths=1.2, zorder=2)
+            for h, x, y in zip(self.holdings, xs, ys):
+                self.ax_scatter.annotate(
+                    h.ticker, (x, y), textcoords="offset points", xytext=(0, 7),
+                    ha="center", fontsize=7.5, color=self.TEXT_PRIMARY,
+                )
+            self.ax_scatter.set_xlabel("30D SEC Yield %", fontsize=8.5, color=self.TEXT_SECONDARY)
+            self.ax_scatter.set_ylabel("TTM Yield %", fontsize=8.5, color=self.TEXT_SECONDARY)
+            self.ax_scatter.tick_params(labelsize=8, colors=self.TEXT_SECONDARY)
+            self.ax_scatter.set_xlim(lo, hi)
+            self.ax_scatter.set_ylim(lo, hi)
+            self.ax_scatter.spines["top"].set_visible(False)
+            self.ax_scatter.spines["right"].set_visible(False)
+            self.ax_scatter.spines["left"].set_color(self.BORDER)
+            self.ax_scatter.spines["bottom"].set_color(self.BORDER)
+            self.ax_scatter.grid(color=self.BORDER, linewidth=0.6, alpha=0.5)
+            self.ax_scatter.set_axisbelow(True)
+            self.ax_scatter.text(
+                0.02, 0.96, "above line: TTM > SEC", transform=self.ax_scatter.transAxes,
+                fontsize=7, color=self.TEXT_MUTED, va="top",
+            )
+            self.fig_scatter.tight_layout()
+        else:
+            self.ax_scatter.text(0.5, 0.5, "No holdings yet", ha="center", va="center",
+                                  fontsize=10, color=self.TEXT_SECONDARY)
+            self.ax_scatter.axis("off")
+            self.fig_scatter.tight_layout()
+        self.fig_scatter.patch.set_facecolor(self.BG_PANEL)
+        self.ax_scatter.set_facecolor(self.BG_PANEL)
+        self.canvas_scatter.draw()
 
 
 if __name__ == "__main__":
