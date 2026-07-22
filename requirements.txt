@@ -1,0 +1,18 @@
+# --- Portfolio True Exposure Terminal (True_Exposure.py) ---
+streamlit
+pandas
+numpy
+plotly
+networkx
+openpyxl
+
+# --- Dividend Liability Dashboard (dividend_liability_dashboard.py) ---
+matplotlib
+yfinance
+requests
+beautifulsoup4
+
+# Note: tkinter (used by the dashboard's GUI) is part of the Python standard
+# library, not a pip package. It ships with the standard installers from
+# python.org (Windows/macOS). On Linux, install it via your package manager,
+# e.g.: sudo apt-get install python3-tk
